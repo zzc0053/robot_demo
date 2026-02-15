@@ -1,0 +1,81 @@
+############################
+# Python
+############################
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.eggs/
+.env
+.venv/
+venv/
+ENV/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+coverage/
+htmlcov/
+
+############################
+# ROS / Robotics
+############################
+build/
+devel/
+install/
+log/
+*.bag
+*.db
+*.db-shm
+*.db-wal
+*.rviz
+
+############################
+# Jupyter
+############################
+.ipynb_checkpoints/
+
+############################
+# PyTorch / ML
+############################
+*.pt
+*.pth
+*.ckpt
+*.onnx
+wandb/
+runs/
+tensorboard/
+logs/
+
+############################
+# VSCode
+############################
+.vscode/
+
+############################
+# JetBrains / PyCharm
+############################
+.idea/
+*.iml
+
+############################
+# macOS
+############################
+.DS_Store
+.AppleDouble
+.LSOverride
+
+############################
+# Linux
+############################
+*~
+*.swp
+*.tmp
+
+############################
+# Data / Results (常见)
+############################
+data/
+datasets/
+outputs/
+results/
+checkpoints/
