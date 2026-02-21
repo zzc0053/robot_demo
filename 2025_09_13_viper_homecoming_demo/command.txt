@@ -1,0 +1,6 @@
+1. open terminal
+ros2 launch interbotix_xsarm_control xsarm_control.launch.py robot_model:=vx300 robot_name:=vx300 use_rviz:=false
+
+2. open another terminal
+conda activate viper
+python3 homecoming.py
