@@ -62,7 +62,7 @@ ARBITER_PREFER = "voice"   # if both arrive, voice wins
 STABLE_N = 30
 
 # UDP target
-JETSON_IP = "192.19.200.174"
+JETSON_IP = "172.19.200.174"
 JETSON_PORT = 5005
 
 gesture = HandGestureRecognizer()
