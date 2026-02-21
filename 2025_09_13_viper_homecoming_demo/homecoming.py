@@ -324,6 +324,7 @@ def main():
     }
 
     show_help = True # <- toggle help panel with 'h'
+    arm_enabled = False
 
     with mp_hands.Hands(
         static_image_mode=False,
@@ -370,12 +371,14 @@ def main():
                         print(f"[{time.strftime('%H:%M:%S')}] Detected: {stable_label} | {details}")
                         last_stable = stable_label
                         last_trigger_time = now
-                        run_action(stable_label, details, state, arm_exec)
+                        if arm_enabled:
+                            run_action(stable_label, details, state, arm_exec)
                         state["last_cmd_label"] = stable_label
 
                     # If stable label hasn’t changed: for directional actions, continuously trigger at HOLD_REPEAT interval
                     elif stable_label == state.get("last_cmd_label"):
-                        run_action(stable_label, details, state, arm_exec)
+                        if arm_enabled:
+                            run_action(stable_label, details, state, arm_exec)
                         state["last_cmd_label"] = stable_label
                     else:
                         state["last_cmd_label"] = stable_label
@@ -385,6 +388,9 @@ def main():
             cv2.rectangle(frame, (10, 10), (360, 80), (0, 0, 0), -1)
             cv2.putText(frame, f"{ui_label}", (20, 60),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.6, (255, 255, 255), 3, cv2.LINE_AA)
+            status_text = "ARM: ON" if arm_enabled else "ARM: STOPPED"
+            color = (0, 255, 0) if arm_enabled else (0, 0, 255)
+            cv2.putText(frame, status_text, (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2, cv2.LINE_AA)
             frame = draw_help_panel_topright(frame, show=show_help)
             cv2.namedWindow("GestureCam", cv2.WINDOW_NORMAL)
             cv2.setWindowProperty("GestureCam", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN )
@@ -395,9 +401,12 @@ def main():
                 break
             elif key == ord('h'):
                 show_help = not show_help
+            elif key == ord('s'):
+                arm_enabled = not arm_enabled
 
     cap.stop()
     arm_exec.stop()
+    time.sleep(1)
     bot.arm.go_to_sleep_pose(moving_time=3.0, accel_time=1.0)
     time.sleep(1)
     bot.shutdown()
