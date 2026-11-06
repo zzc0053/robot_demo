@@ -6,6 +6,10 @@ import threading
 import json
 import socket
 import tempfile
+import shutil
+import sys
+import urllib.request
+import zipfile
 
 import cv2
 import numpy as np
@@ -133,6 +137,11 @@ DEFAULT_COOLDOWN_S = 1.5
 ARBITER_PREFER = "voice"
 STABLE_N = 30
 
+# Vosk speech model — not stored in git; downloaded next to this script on first run (~130 MB)
+VOSK_MODEL_NAME = "vosk-model-en-us-0.22-lgraph"
+VOSK_MODEL_URL  = f"https://alphacephei.com/vosk/models/{VOSK_MODEL_NAME}.zip"
+VOSK_MODEL_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), VOSK_MODEL_NAME)
+
 CAMERA_ENABLED = True   # start with the camera on? False = start off to save power ('c' / button toggles)
 
 JETSON_IP = "100.68.185.25"
@@ -203,6 +212,68 @@ GESTURE_TO_ACTION = {
     "open":       (12, None),
     "yeah":       (20, None),
 }
+
+# =========================
+# Vosk model download
+# =========================
+def _vosk_model_ok(path):
+    # A usable Vosk model has at least these two folders
+    return os.path.isdir(os.path.join(path, "am")) and os.path.isdir(os.path.join(path, "conf"))
+
+
+def ensure_vosk_model(model_dir=VOSK_MODEL_DIR, url=VOSK_MODEL_URL):
+    """Download and unzip the Vosk model if it isn't already next to this script."""
+    if _vosk_model_ok(model_dir):
+        return model_dir
+
+    parent = os.path.dirname(model_dir)
+    print(f"[VOSK] Model not found at {model_dir}")
+    print(f"[VOSK] Downloading {url} (~130 MB, one time only)...")
+
+    tmp_zip = None
+    try:
+        fd, tmp_zip = tempfile.mkstemp(suffix=".zip", dir=parent)
+        os.close(fd)
+
+        last_pct = [-1]
+        def progress(blocks, block_size, total):
+            if total <= 0:
+                return
+            pct = min(100, blocks * block_size * 100 // total)
+            if pct != last_pct[0] and pct % 5 == 0:
+                last_pct[0] = pct
+                sys.stdout.write(f"\r[VOSK] {pct:3d}%  ({blocks * block_size / 1e6:.0f}/{total / 1e6:.0f} MB)")
+                sys.stdout.flush()
+
+        urllib.request.urlretrieve(url, tmp_zip, reporthook=progress)
+        print()
+
+        print("[VOSK] Extracting...")
+        with zipfile.ZipFile(tmp_zip) as zf:
+            root = os.path.realpath(parent)
+            for member in zf.namelist():
+                dest = os.path.realpath(os.path.join(parent, member))
+                if not (dest == root or dest.startswith(root + os.sep)):
+                    raise RuntimeError(f"unsafe path in zip: {member}")
+            # Remove any half-finished folder from an earlier failed run
+            if os.path.isdir(model_dir):
+                shutil.rmtree(model_dir)
+            zf.extractall(parent)
+    except Exception as e:
+        raise RuntimeError(
+            f"[VOSK] Could not download the speech model: {e}\n"
+            f"       Download it manually from {url} and unzip it into {parent}"
+        ) from e
+    finally:
+        if tmp_zip and os.path.exists(tmp_zip):
+            os.remove(tmp_zip)
+
+    if not _vosk_model_ok(model_dir):
+        raise RuntimeError(f"[VOSK] Download finished but {model_dir} doesn't look like a Vosk model")
+
+    print(f"[VOSK] Model ready at {model_dir}")
+    return model_dir
+
 
 # =========================
 # Mode helpers
@@ -329,8 +400,7 @@ def vision_thread(stable_N=STABLE_N):
 
 
 def voice_thread():
-    model_path = "vosk-model-en-us-0.22-lgraph"
-    model = Model(model_path)
+    model = Model(VOSK_MODEL_DIR)   # ensure_vosk_model() in main() has already fetched it
     sample_rate = 16000
 
     grammar = json.dumps([
@@ -539,6 +609,9 @@ def sender_thread(jetson_ip: str, jetson_port: int = 5005):
 # =========================
 def main():
     global control_mode, ptt_active, ptt_last_pressed, camera_toggle_requested
+
+    # Fetch the speech model up front (one-time download) so voice works as soon as the window opens
+    ensure_vosk_model()
 
     if CAMERA_ENABLED:
         open_camera()

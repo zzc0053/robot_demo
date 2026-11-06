@@ -172,4 +172,5 @@ dependencies:
       - typer==0.23.1
       - typer-slim==0.23.1
       - typing-extensions==4.15.0
+      - vosk==0.3.44
 prefix: /Users/zhou/miniconda3/envs/go2

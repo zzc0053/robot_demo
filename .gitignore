@@ -79,3 +79,8 @@ datasets/
 outputs/
 results/
 checkpoints/
+
+############################
+# Speech models (downloaded at runtime by go2_eday/main.py)
+############################
+vosk-model-*/
