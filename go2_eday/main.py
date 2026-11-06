@@ -137,6 +137,7 @@ CAMERA_ENABLED = True   # start with the camera on? False = start off to save po
 
 JETSON_IP = "100.68.185.25"
 # JETSON_IP = "192.168.12.129"
+# JETSON_IP = "172.19.200.174"
 JETSON_PORT = 5005
 
 # Keepalive: stop the Go2 going limp/sleeping when idle. If no command has been
